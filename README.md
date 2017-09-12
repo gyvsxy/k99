@@ -15,3 +15,6 @@ SELECT SUM(sd.fee_money) feeAll, sd.stu_code stuCode FROM stufee_detail sd GROUP
 
 SELECT creditsum FROM stu_credit GROUP BY creditsum;
 SELECT * FROM stu_delayfee where sum=3510
+
+
+end
