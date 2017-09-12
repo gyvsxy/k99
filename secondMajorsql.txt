@@ -1,0 +1,83 @@
+SELECT DISTINCT
+ sst.ID_CARD AS '身份证号',
+ sst.`NAME` AS '姓名',
+ sst.STU_NUMBER as '学号',
+ IF(sst.GENDER=1,'男','女') '性别',
+ sst.phone '电话',
+ sd.dept_name '专科学院',
+ ema.major_name AS '专业',
+ stc.class_name AS '班级',
+ ema2.major_name '报名的本科专业',
+ sst.CREATE_TIME '报名时间',
+ fee1.create_time '缴费时间',
+ IFNULL(fee1.cash, 0) + IFNULL(fee1.POS, 0) + IFNULL(fee1.weChatPay, 0) AS '已缴费用'
+FROM
+ stu_secondmajor ssec 
+ LEFT JOIN STU_STUDENT sst ON ssec.stu_code = sst.stu_code
+LEFT JOIN (
+ SELECT
+  fch.STU_CODE,
+  MIN(fch.create_time) AS create_time,
+  SUM(fcw.FEES) AS fees,
+  GROUP_CONCAT(DISTINCT fch.create_by) AS create_by,
+  SUM(
+
+   IF (
+    fcw.CHARGE_WAY = 'cash',
+    fcw.FEES,
+    NULL
+   )
+  ) AS cash,
+  SUM(
+
+   IF (
+    fcw.CHARGE_WAY = 'POS',
+    fcw.FEES,
+    NULL
+   )
+  ) AS POS,
+  SUM(
+
+   IF (
+    fcw.CHARGE_WAY = 'weChatPay',
+    fcw.FEES,
+    NULL
+   )
+  ) AS weChatPay
+ FROM
+  fee_charge fch
+ INNER JOIN fee_chargeWay fcw ON fch.CHARGE_ID = fcw.CHARGE_ID
+ AND fcw.CHARGE_WAY <> 'alipay' -- 不等于减免的
+ WHERE
+  fch.major_seq = '2' -- fch.create_time BETWEEN CONCAT(DATE_FORMAT(NOW(),'%Y-%m-%d'),' 00:00:00') AND  CONCAT(DATE_FORMAT(NOW(),'%Y-%m-%d'),' 23:59:59')
+  --  AND  fch.create_time BETWEEN CONCAT('2017-08-10',' 00:00:00') AND CONCAT('2017-08-10',' 23:59:59')
+ GROUP BY
+  fch.STU_CODE
+) fee1 ON fee1.STU_CODE = sst.STU_CODE
+INNER JOIN edu_major ema ON sst.MAJOR_CODE = ema.country_code AND ema.`status` = '1' -- AND ema.years = '3'-- 年制
+LEFT JOIN sys_dept sd ON sd.dept_id = ema.dept_id
+LEFT JOIN (
+ SELECT
+  ecl.class_name,
+  esc.stu_code
+ FROM
+  edu_student_class esc
+ LEFT JOIN edu_class ecl ON ecl.class_id = esc.class_id
+) stc ON sst.STU_CODE = stc.stu_code
+LEFT JOIN (
+ SELECT
+  j1.key_value,
+  j1.`name`
+ FROM
+  dictionary j
+ LEFT JOIN dictionary j1 ON j.dictionary_id = j1.parent_id
+ WHERE
+  j.parent_id = "0"
+ AND j.key_value = "12"
+) dic ON dic.key_value = sst.NATION
+LEFT JOIN edu_major ema2 ON ema2.id = ssec.majorid
+WHERE
+ sst.`NAME` NOT LIKE '%测%'
+ORDER BY
+ fee1.create_time,
+ stc.class_name
