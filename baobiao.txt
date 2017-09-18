@@ -1,0 +1,37 @@
+			SELECT
+			es.`NAME` name,
+			es.GENDER=1 gender,
+			IF(es.ENROLL_TYPE=1,'统招','非统招') enrollType,
+			sd.dept_name deptName,
+			mk.major_name majorName,
+			ecc.class_name className,
+			IF(mk.dicName=3,'三年制','五年制') years,
+			dic2.`name` nation,
+			es.TELEPHONE mobilePhone,
+			es.EXAM_NUMBER examNumber,
+			es.ID_CARD idCard,
+			es.REG_STATUS regStatus,
+			ss.regFlag regStatus,
+			IF(fcc.STU_CODE,'Y','N') feeStatus
+		FROM
+			EM_NEW_STUDENT es
+		LEFT JOIN 
+			(SELECT ss1.STU_CODE STU_CODE, IF(ss1.STU_CODE,'Y','N') regFlag FROM STU_STUDENT ss1 ON es.STU_CODE=ss1.STU_CODE) ss
+		ON es.STU_CODE=ss.STU_CODE
+		LEFT JOIN
+			(SELECT fc.STU_CODE STU_CODE FROM fee_charge fc GROUP BY fc.STU_CODE) fcc
+		ON fcc.STU_CODE=es.STU_CODE
+		LEFT JOIN
+			(SELECT m.major_name major_name, m.country_code country_code, m.dept_id dept_id, dic.`name` dicName FROM edu_major m LEFT JOIN 
+					(SELECT j1.key_value,j1.`name` FROM dictionary j LEFT JOIN dictionary j1 ON j.dictionary_id = j1.parent_id WHERE j.parent_id = "0" AND j.key_value = "4" ) dic ON dic.key_value = m.years) mk
+		ON mk.country_code=es.MAJOR_CODE
+		LEFT JOIN
+			sys_dept sd
+		ON mk.dept_id=sd.dept_id
+		LEFT JOIN
+			(SELECT ec.class_name class_name, esc.stu_code stu_code FROM edu_student_class esc LEFT JOIN edu_class ec ON esc.class_id=ec.class_id) ecc
+		ON ecc.stu_code=es.STU_CODE
+		LEFT JOIN
+			(SELECT j1.key_value,j1.`name` FROM dictionary j LEFT JOIN dictionary j1 ON j.dictionary_id = j1.parent_id WHERE j.parent_id = "0" AND j.key_value = "12" ) dic2 
+		ON dic2.key_value = es.NATION
+	
